@@ -575,20 +575,20 @@ work[male_higher] <- rbinom(n = sum(male_higher),        # мужчины с в�
                             size = 1,
                             prob = p_male_higher)
 work[male_basic] <- rbinom(n = sum(male_basic),          # мужчины со средним образованием
-                            size = 1,
-                            prob = p_male_basic)         
+                           size = 1,
+                           prob = p_male_basic)         
 work[male_no] <- rbinom(n = sum(male_no),                # мужчины без образования
-                           size = 1,
-                           prob = p_male_no)
-work[female_higher] <- rbinom(n = sum(female_higher),    # женщины с высшим образованием
-                            size = 1,
-                            prob = p_female_higher)
-work[female_basic] <- rbinom(n = sum(female_basic),      # женщины со средним образованием 
-                           size = 1,
-                           prob = p_female_basic)
-work[female_no] <- rbinom(n = sum(female_no),            # женщины без образования
                         size = 1,
-                        prob = p_female_no)
+                        prob = p_male_no)
+work[female_higher] <- rbinom(n = sum(female_higher),    # женщины с высшим образованием
+                              size = 1,
+                              prob = p_female_higher)
+work[female_basic] <- rbinom(n = sum(female_basic),      # женщины со средним образованием 
+                             size = 1,
+                             prob = p_female_basic)
+work[female_no] <- rbinom(n = sum(female_no),            # женщины без образования
+                          size = 1,
+                          prob = p_female_no)
 
 # Оценим вероятности занятости
 p_male_higher_est <- mean(work[male_higher])             # мужчины с высшим образованием

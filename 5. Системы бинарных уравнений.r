@@ -364,8 +364,9 @@ model_bp_1 <- gjrm(formula = list(formula_1,
                    data = d,
                    Model = "B",
                  
-                   margins = c("probit", "logit"),            # выбираем маржинальные распределения
-                   BivD = "C0")                               # выбираем копулу
+                   margins = c("probit",                      # в первом уравнении распределение случайной
+                               "logit"),                      # ошибки будет нормальным, а во втором - логистическим
+                   BivD = "C0")                               # выбираем копулу Клейтона
 summary(model_bp_1)
   # Гумбеля
 model_bp_2 <- gjrm(formula = list(formula_1,
@@ -374,7 +375,7 @@ model_bp_2 <- gjrm(formula = list(formula_1,
                    Model = "B",
                    
                    margins = c("probit", "logit"),            # выбираем маржинальные распределения
-                   BivD = "G0")                               # выбираем копулу
+                   BivD = "G0")                               # выбираем копулу Гумбеля
 summary(model_bp_2)
 
 # Сравним модели по AIC

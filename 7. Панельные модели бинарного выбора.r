@@ -20,7 +20,7 @@ library("np")                                            # ядерное оце
                                                          # моделей бинарного выбора
 library("Ecdat")                                         # встроенные данные
 library("margins")                                       # расчет предельных эффектов
-library("pglm")                                          # расчет предельных эффектов
+library("pglm")                                          # панельные модели бинарного выбора
 
 #---------------------------------------------------
 # Часть 1. Применение панельной пробит модели
@@ -32,7 +32,7 @@ set.seed(123)                                            # для воспрои
 n <- 10000                                               # число наблюдений    
 m <- 10                                                  # число наблюдений по каждой категории
 X <- rmvnorm(n,                                          # симулируем n наблюдений из многомерного
-             # нормального распределения
+                                                         # нормального распределения
              c(0, 0, 0),                                 # с нулевым вектором математических ожиданий и
              matrix(c(1, 0.2, 0.3,                       # следующей ковариационной матрице
                       0.2, 1, -0.1,
@@ -76,7 +76,7 @@ z_li <- gamma[1] * h$Intercept +                         # константой
         gamma[6] * h$skills * h$male +                   # взаимодействием навыков и пола
         gamma[7] * h$weight                              # но не показателем веса, поскольку
 # коэффициент при нем равен нулю
-z_star <- z_li  + u + a                            # латентная переменная как сумма
+z_star <- z_li + u + a                                   # латентная переменная как сумма
 
 # Создадим наблюдаемую зависимую переменную,
 # отражающую работает индивид или нет
@@ -91,11 +91,11 @@ model_probit <- glm(formula = work ~ skills + male +
                                      experience + 
                                      I(experience ^ 2) +  
                                      I(skills * male) +
-                                      weight,                                                 
+                                     weight,                                                 
                     data = h,
                     family = binomial(link = "probit"))      
-gamma_probit <- coef(model_probit)
-
+gamma_probit <- coef(model_probit)                       # сохраним коэффициенты
+summary(model_probit)                                    # посмотрим на результат
 
 # Оценим параметры модели
 model_panel <- pglm(work ~ skills +                      # формула по аналогии с glm
@@ -121,7 +121,7 @@ sigma_a_est <- model_panel$estimate["sigma"] / sqrt(2)   # оценка стан
                                                          # случайного эффекта
 gamma_panel <- coef(model_panel)                         # оценки коэффициентов из которых
 gamma_panel <- gamma_panel[names(gamma_panel) !=         # для удобства исключим sigma_a
-                           "sigma"]#
+                           "sigma"]
 
 # Сравним точность оценок
 data.frame("Real" = gamma,
@@ -136,8 +136,8 @@ data.frame("Probit" = AIC(model_probit),
 
 # Оценим вероятность занятости для Бориса
 Boris <- data.frame("work" = 1,
-                    "skills" = 0.2,                           # укажем характеристики
-                    "male" = 1,                               # Бориса в датафрейме
+                    "skills" = 0.2,                      # укажем характеристики
+                    "male" = 1,                          # Бориса в датафрейме
                     "experience" = -0.3,
                     "weight" = 0.2)
   # получим матрицу характеристик Бориса в
@@ -146,11 +146,14 @@ Boris <- data.frame("work" = 1,
 X_Boris <- model.frame(formula = formula(model_panel), 
                        data = Boris)[-1]
   # рассчитаем вероятность по обычной пробит модели
-prob_Boris_probit <- predict(model_probit, newdata = Boris,
+prob_Boris_probit <- predict(model_probit, 
+                             newdata = Boris,
                              type = "response")
-  # рассчитаем вероятность по модели со случанйыми эффектами
-li_Boris <- gamma_panel[1] + sum(X_Boris * gamma_panel[-1])   # линейный индекс
-prob_Boris_panel <- pnorm(li_Boris,                           # вероятность
+  # рассчитаем вероятность по модели со 
+  # случанйыми эффектами
+li_Boris <- gamma_panel[1] +                             # линейный индекс
+            sum(X_Boris * gamma_panel[-1])               
+prob_Boris_panel <- pnorm(li_Boris,                      # вероятность
                           sd = sqrt(1 + sigma_a_est ^ 2))
   # сравним оценки вероятностей занятости
 data.frame("Probit" = prob_Boris_probit,
@@ -162,13 +165,13 @@ data.frame("Probit" = prob_Boris_probit,
 
 # Рассчитаем вероятность занятости Бориса,
 # используя закон больших чисел ЗБЧ:
-# P(e > -a - xb) = E(P(e > -a - xb)) =
-  #                E[E(P(e > -a - xb) | a)] =
-  #                E[E(F(xb + a) | a)], 
-  # где E(P(e > -a - xb) | a) при не фиксированном
-  # "a" это случайная величина, которая зависит от
-  # случайной величины "a", что позволяет
-  # применить ЗБЧ
+# P(z = 1) = P(e + a > - xb) = P(e > -a - xb) = 
+# E(P(e > -a - xb)) = E[E(P(e > -a - xb) | a)] =
+# E[E(F(xb + a) | a)], 
+# где E(P(e > -a - xb) | a) при не фиксированном
+# "a" это случайная величина, которая зависит от
+# случайной величины "a", что позволяет
+# применить ЗБЧ
 n_sim <- 1000000                                         # чем больше, чем точней
 a_new <- rnorm(n_sim, sd = sigma_a_est)                  # выборка из того же распределения,
                                                          # что и у случайного эффекта
@@ -190,7 +193,7 @@ li_Boris_new <- gamma_panel[1] + sum(X_Boris * gamma_panel[-1])
 
 # Используя ЗБЧ оценим вероятность того, что в
 # Борис был занят в обоих периодах времени:
-# P(e1 > -a - x1b, e2 > -a - x2b) = 
+# P(z1 = 1, z2 = 1) = P(e1 > -a - x1b, e2 > -a - x2b) = 
 # E(P(e1 > -a - x1b, e2 > -a - x2b))
 # E[E(P(e1 > -a - x1b, e2 > -a - x2b) | a)] =
 # E[E(P(e1 > -a - x1b) * P(e2 > -a - x2b) | a)]
@@ -264,8 +267,6 @@ h$hisp[h$com == "hispanic"] <- 1                                  # изменя
 h$union_lag <- 0
   #h$union_lag[h$year == 1980] <- NA
 h$union_lag[h$year >= 1981] <- h$union[h$year < 1987] 
-
-cbind(h$year, h$union, h$union_lag)
 
 # Оценим вероятность членства в профсоюзе
 # используя обычную пробит модель
@@ -362,7 +363,6 @@ ProbitRELnL <- function(x, z, X, id, n_sim = 1000)       # функция пра
 
   for(i in unique(id))                                   # для каждой категории
   {
-    
     for(j in which(id == i))                             # для каждого наблюдения
     {                                                    # в данной категории
       z_li_a <- z_est[j] + a_new                         # считаем сумму линейного индекса
@@ -457,7 +457,8 @@ model <- ProbitRE(work ~ Intercept +                     # указываем ф
                   experience + I(experience ^ 2) +                   
                   I(skills * male) +
                   weight,
-                data = h)                                    
+                 data = h,
+                 n_sim = 1000)                                    
 gamma_est <- model$gamma                                 # получаем оценки коэффициентов
 gamma_cov_est <- model$cov                               # получаем оценку асимптотической
 
